@@ -6,6 +6,7 @@ interface Task {
   deadline?: string;
   completed: boolean;
   createdAt: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 interface StatsViewProps {
@@ -38,6 +39,11 @@ const StatsView: React.FC<StatsViewProps> = ({ tasks }) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays > 0 && diffDays <= 7
   }).length
+
+  // Tasks by priority
+  const highPriorityTasks = tasks.filter(task => task.priority === 'high').length
+  const mediumPriorityTasks = tasks.filter(task => task.priority === 'medium').length
+  const lowPriorityTasks = tasks.filter(task => task.priority === 'low').length
 
   // Tasks created this week
   const thisWeekTasks = tasks.filter(task => {
@@ -147,6 +153,25 @@ const StatsView: React.FC<StatsViewProps> = ({ tasks }) => {
             style={{ width: `${completionRate}%` }}
           >
             <span className="progress-text">{completionRate}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Priority Statistics */}
+      <div className="deadline-stats">
+        <h3>🏷️ Priority Distribution</h3>
+        <div className="deadline-grid">
+          <div className="deadline-item overdue">
+            <span className="deadline-number">{highPriorityTasks}</span>
+            <span className="deadline-label">High Priority</span>
+          </div>
+          <div className="deadline-item today">
+            <span className="deadline-number">{mediumPriorityTasks}</span>
+            <span className="deadline-label">Medium Priority</span>
+          </div>
+          <div className="deadline-item upcoming">
+            <span className="deadline-number">{lowPriorityTasks}</span>
+            <span className="deadline-label">Low Priority</span>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ interface Task {
   deadline?: string;
   completed: boolean;
   createdAt: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 interface CalendarViewProps {

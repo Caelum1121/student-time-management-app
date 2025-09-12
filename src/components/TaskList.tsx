@@ -6,6 +6,7 @@ interface Task {
   deadline?: string;
   completed: boolean;
   createdAt: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 interface TaskListProps {
@@ -39,6 +40,24 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   }
 
+  const getPriorityIcon = (priority: 'high' | 'medium' | 'low') => {
+    switch (priority) {
+      case 'high': return '🔴'
+      case 'medium': return '🟡'
+      case 'low': return '🟢'
+      default: return '🟡'
+    }
+  }
+
+  const getPriorityLabel = (priority: 'high' | 'medium' | 'low') => {
+    switch (priority) {
+      case 'high': return 'High Priority'
+      case 'medium': return 'Medium Priority'
+      case 'low': return 'Low Priority'
+      default: return 'Medium Priority'
+    }
+  }
+
   const handleEdit = (task: Task) => {
     const newTitle = prompt('Edit task:', task.title)
     if (newTitle && newTitle.trim()) {
@@ -64,14 +83,19 @@ const TaskList: React.FC<TaskListProps> = ({
               />
               <div className="task-details">
                 <span className="task-title">{task.title}</span>
-                {task.deadline && (
-                  <span className={`task-deadline ${
-                    new Date(task.deadline) < new Date() ? 'overdue' : 
-                    new Date(task.deadline).toDateString() === new Date().toDateString() ? 'today' : ''
-                  }`}>
-                    📅 {formatDate(task.deadline)}
+                <div className="task-meta">
+                  <span className={`task-priority priority-${task.priority}`}>
+                    {getPriorityIcon(task.priority)} {getPriorityLabel(task.priority)}
                   </span>
-                )}
+                  {task.deadline && (
+                    <span className={`task-deadline ${
+                      new Date(task.deadline) < new Date() ? 'overdue' : 
+                      new Date(task.deadline).toDateString() === new Date().toDateString() ? 'today' : ''
+                    }`}>
+                      📅 {formatDate(task.deadline)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="task-actions">

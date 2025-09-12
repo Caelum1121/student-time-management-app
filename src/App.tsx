@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
+import TaskFilter from './components/TaskFilter'
 import CalendarView from './components/CalendarView'
 import StatsView from './components/StatsView'
 
@@ -11,6 +12,7 @@ interface Task {
   deadline?: string;
   completed: boolean;
   createdAt: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 type ViewType = 'list' | 'calendar' | 'stats'
@@ -18,12 +20,29 @@ type ViewType = 'list' | 'calendar' | 'stats'
 function App() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentView, setCurrentView] = useState<ViewType>('list')
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+  const [dateRangeFilter, setDateRangeFilter] = useState({ start: '', end: '' })
 
   // Load tasks from localStorage
   useEffect(() => {
     const savedTasks = localStorage.getItem('tasks')
     if (savedTasks) {
-      setTasks(JSON.parse(savedTasks))
+      try {
+        const parsedTasks = JSON.parse(savedTasks)
+        // Add priority to existing tasks if they don't have it
+        const tasksWithPriority = parsedTasks.map((task: any) => ({
+          ...task,
+          priority: task.priority || 'medium'
+        }))
+        setTasks(tasksWithPriority)
+      } catch (error) {
+        console.error('Error loading tasks from localStorage:', error)
+        setTasks([])
+      }
     }
   }, [])
 
@@ -31,6 +50,51 @@ function App() {
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks))
   }, [tasks])
+
+  // Filter tasks based on current filters
+  const getFilteredTasks = () => {
+    return tasks.filter(task => {
+      // Search filter
+      const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'pending' && !task.completed) ||
+        (statusFilter === 'completed' && task.completed)
+      
+      // Priority filter
+      const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter
+      
+      // Date range filter
+      const matchesDateRange = () => {
+        if (!task.deadline) return !dateRangeFilter.start && !dateRangeFilter.end
+        if (!dateRangeFilter.start && !dateRangeFilter.end) return true
+        
+        const taskDate = new Date(task.deadline)
+        const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null
+        const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null
+        
+        if (startDate && endDate) {
+          return taskDate >= startDate && taskDate <= endDate
+        } else if (startDate) {
+          return taskDate >= startDate
+        } else if (endDate) {
+          return taskDate <= endDate
+        }
+        return true
+      }
+      
+      return matchesSearch && matchesStatus && matchesPriority && matchesDateRange()
+    })
+  }
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('')
+    setStatusFilter('all')
+    setPriorityFilter('all')
+    setDateRangeFilter({ start: '', end: '' })
+  }
 
   // Add new task
   const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
@@ -62,26 +126,41 @@ function App() {
   }
 
   const renderCurrentView = () => {
+    const filteredTasks = getFilteredTasks()
+    
     switch (currentView) {
       case 'list':
         return (
-          <TaskList
-            tasks={tasks}
-            onToggleTask={toggleTask}
-            onEditTask={editTask}
-            onDeleteTask={deleteTask}
-          />
+          <>
+            <TaskFilter
+              searchTerm={searchTerm}
+              statusFilter={statusFilter}
+              priorityFilter={priorityFilter}
+              dateRangeFilter={dateRangeFilter}
+              onSearchChange={setSearchTerm}
+              onStatusChange={setStatusFilter}
+              onPriorityChange={setPriorityFilter}
+              onDateRangeChange={setDateRangeFilter}
+              onClearFilters={clearFilters}
+            />
+            <TaskList
+              tasks={filteredTasks}
+              onToggleTask={toggleTask}
+              onEditTask={editTask}
+              onDeleteTask={deleteTask}
+            />
+          </>
         )
       case 'calendar':
         return (
           <CalendarView
-            tasks={tasks}
+            tasks={filteredTasks}
             onToggleTask={toggleTask}
           />
         )
       case 'stats':
         return (
-          <StatsView tasks={tasks} />
+          <StatsView tasks={filteredTasks} />
         )
       default:
         return null

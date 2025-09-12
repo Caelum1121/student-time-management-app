@@ -6,6 +6,7 @@ interface Task {
   deadline?: string;
   completed: boolean;
   createdAt: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 interface TaskFormProps {
@@ -15,6 +16,7 @@ interface TaskFormProps {
 const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDeadline, setNewTaskDeadline] = useState('')
+  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('medium')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,10 +26,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
       title: newTaskTitle.trim(),
       deadline: newTaskDeadline || undefined,
       completed: false,
+      priority: newTaskPriority,
     })
 
     setNewTaskTitle('')
     setNewTaskDeadline('')
+    setNewTaskPriority('medium')
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -49,6 +53,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAddTask }) => {
             className="task-input"
             required
           />
+          <select
+            value={newTaskPriority}
+            onChange={(e) => setNewTaskPriority(e.target.value as 'high' | 'medium' | 'low')}
+            className="priority-select"
+          >
+            <option value="high">🔴 High Priority</option>
+            <option value="medium">🟡 Medium Priority</option>
+            <option value="low">🟢 Low Priority</option>
+          </select>
           <input
             type="date"
             value={newTaskDeadline}
