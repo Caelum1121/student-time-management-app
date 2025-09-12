@@ -6,10 +6,22 @@
 
 ## 🚀 Project Setup & Usage
 **How to install and run your project:**  
-✍️  
-Example (replace with your actual steps)  
-- `npm install`  
-- `npm start`
+# Clone the repository
+- `git clone [your-repo-url]
+cd student-todo-app`
+
+# Install dependencies
+- `npm install`
+
+# Start development server
+- `npm run dev`
+
+# Build for production
+- `npm run build`
+
+# Preview production build
+- `npm run preview`
+  
 
 ## 🔗 Deployed Web URL or APK file
 ✍️ [Paste your link here]
