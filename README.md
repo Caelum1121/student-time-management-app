@@ -6,7 +6,8 @@
 
 ## 🚀 Project Setup & Usage
 **How to install and run your project:**  
-# Clone the repository
+
+Clone the repository
 - `git clone [your-repo-url]
 cd student-todo-app`
 
