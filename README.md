@@ -10,16 +10,16 @@
 - `git clone [your-repo-url]
 cd student-todo-app`
 
-# Install dependencies
+Install dependencies
 - `npm install`
 
-# Start development server
+Start development server
 - `npm run dev`
 
-# Build for production
+Build for production
 - `npm run build`
 
-# Preview production build
+Preview production build
 - `npm run preview`
   
 
