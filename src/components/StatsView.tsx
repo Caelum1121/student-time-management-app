@@ -55,6 +55,53 @@ const StatsView: React.FC<StatsViewProps> = ({ tasks }) => {
         return taskDate >= weekAgo
     }).length
 
+    // Time tracking statistics
+    const timeStats = {
+        totalEstimatedTime: tasks.reduce((sum, task) => sum + (task.estimatedTime || 0), 0),
+        totalActualTime: tasks.reduce((sum, task) => sum + (task.actualTime || 0), 0),
+        tasksWithActualTime: tasks.filter(task => task.actualTime && task.actualTime > 0).length,
+        averageTaskTime: (() => {
+            const tasksWithTime = tasks.filter(task => task.actualTime && task.actualTime > 0)
+            if (tasksWithTime.length === 0) return 0
+            return Math.round(tasksWithTime.reduce((sum, task) => sum + (task.actualTime || 0), 0) / tasksWithTime.length)
+        })(),
+        timeAccuracy: (() => {
+            const tasksWithBothTimes = tasks.filter(task => 
+                task.estimatedTime && task.estimatedTime > 0 && 
+                task.actualTime && task.actualTime > 0
+            )
+            if (tasksWithBothTimes.length === 0) return 0
+            
+            const totalEstimated = tasksWithBothTimes.reduce((sum, task) => sum + (task.estimatedTime || 0), 0)
+            const totalActual = tasksWithBothTimes.reduce((sum, task) => sum + (task.actualTime || 0), 0)
+            
+            if (totalEstimated === 0) return 0
+            
+            // 改進的準確度計算 - 避免極端值
+            const ratio = totalActual / totalEstimated
+            let accuracy = 0
+            
+            if (ratio >= 0.8 && ratio <= 1.2) {
+                // 在 80%-120% 範圍內，準確度很高
+                accuracy = 100 - Math.abs(ratio - 1) * 100
+            } else if (ratio >= 0.5 && ratio <= 2.0) {
+                // 在 50%-200% 範圍內，中等準確度
+                accuracy = Math.max(50, 80 - Math.abs(ratio - 1) * 50)
+            } else {
+                // 超出合理範圍，準確度很低
+                accuracy = Math.max(10, 50 - Math.abs(ratio - 1) * 20)
+            }
+            
+            return Math.round(Math.min(100, Math.max(0, accuracy)))
+        })()
+    }
+
+    // Most time-consuming tasks
+    const mostTimeConsumingTasks = tasks
+        .filter(task => task.actualTime && task.actualTime > 0)
+        .sort((a, b) => (b.actualTime || 0) - (a.actualTime || 0))
+        .slice(0, 5)
+
     // Productivity metrics
     const productivity = tasks.length > 0 ? {
         averageTasksPerDay: (totalTasks / 30).toFixed(1), // Assuming 30-day period
@@ -159,6 +206,133 @@ const StatsView: React.FC<StatsViewProps> = ({ tasks }) => {
                 </div>
             </div>
 
+            {/* Time Tracking Statistics */}
+            <div className="deadline-stats">
+                <h3>⏱️ Time Tracking Insights</h3>
+                <div className="deadline-grid">
+                    <div className="deadline-item overdue">
+                        <span className="deadline-number">{timeStats.totalActualTime}</span>
+                        <span className="deadline-label">Minutes Focused</span>
+                    </div>
+                    <div className="deadline-item today">
+                        <span className="deadline-number">{timeStats.tasksWithActualTime}</span>
+                        <span className="deadline-label">Tasks Tracked</span>
+                    </div>
+                    <div className="deadline-item upcoming">
+                        <span className="deadline-number">{timeStats.averageTaskTime}</span>
+                        <span className="deadline-label">Avg Minutes/Task</span>
+                    </div>
+                    <div className="deadline-item upcoming">
+                        <span className="deadline-number">{timeStats.timeAccuracy}%</span>
+                        <span className="deadline-label">Time Estimation Accuracy</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Time Comparison */}
+            {timeStats.totalEstimatedTime > 0 && timeStats.totalActualTime > 0 && (
+                <div className="progress-section">
+                    <h3>📊 Estimated vs Actual Time</h3>
+                    <div className="time-comparison">
+                        <div className="time-bar">
+                            <div className="time-label">
+                                <span>Estimated: {timeStats.totalEstimatedTime} minutes</span>
+                            </div>
+                            <div className="progress-bar estimated">
+                                <div 
+                                    className="progress-fill estimated-fill"
+                                    style={{ width: '100%' }}
+                                >
+                                    <span className="progress-text">{timeStats.totalEstimatedTime}min</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="time-bar">
+                            <div className="time-label">
+                                <span>Actual: {timeStats.totalActualTime} minutes</span>
+                            </div>
+                            <div className="progress-bar actual">
+                                <div 
+                                    className="progress-fill actual-fill"
+                                    style={{ 
+                                        width: `${Math.min(100, (timeStats.totalActualTime / Math.max(timeStats.totalEstimatedTime, timeStats.totalActualTime)) * 100)}%`
+                                    }}
+                                >
+                                    <span className="progress-text">{timeStats.totalActualTime}min</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="time-insight">
+                            {timeStats.totalActualTime > timeStats.totalEstimatedTime ? (
+                                <p className="over-estimate">
+                                    📈 You spent {timeStats.totalActualTime - timeStats.totalEstimatedTime} minutes ({Math.round((timeStats.totalActualTime - timeStats.totalEstimatedTime) / 60 * 10) / 10} hours) more than estimated
+                                </p>
+                            ) : timeStats.totalActualTime < timeStats.totalEstimatedTime ? (
+                                (() => {
+                                    const diff = timeStats.totalEstimatedTime - timeStats.totalActualTime
+                                    const diffHours = Math.round(diff / 60 * 10) / 10
+                                    
+                                    // 如果差距很大，給出更有意義的提示
+                                    if (diff > 1000) {
+                                        return (
+                                            <p className="large-variance">
+                                                ⚠️ Large time variance detected. You estimated {Math.round(timeStats.totalEstimatedTime / 60 * 10) / 10} hours but only spent {Math.round(timeStats.totalActualTime / 60 * 10) / 10} hours. Consider reviewing your time estimates!
+                                            </p>
+                                        )
+                                    } else if (diff > 60) {
+                                        return (
+                                            <p className="under-estimate">
+                                                📉 You finished {diffHours} hours faster than estimated - great efficiency!
+                                            </p>
+                                        )
+                                    } else {
+                                        return (
+                                            <p className="under-estimate">
+                                                📉 You finished {diff} minutes faster than estimated
+                                            </p>
+                                        )
+                                    }
+                                })()
+                            ) : (
+                                <p className="perfect-estimate">
+                                    🎯 Perfect estimation! You're getting better at time planning
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Most Time-Consuming Tasks */}
+            {mostTimeConsumingTasks.length > 0 && (
+                <div className="deadline-stats">
+                    <h3>🕐 Most Time-Consuming Tasks</h3>
+                    <div className="time-consuming-tasks">
+                        {mostTimeConsumingTasks.map((task, index) => (
+                            <div key={task.id} className="time-task-item">
+                                <div className="task-rank">#{index + 1}</div>
+                                <div className="task-info">
+                                    <div className="task-title">{task.title}</div>
+                                    <div className="task-time">
+                                        {task.actualTime} minutes
+                                        {task.estimatedTime && (
+                                            <span className="estimated-comparison">
+                                                (estimated: {task.estimatedTime}min)
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="task-status">
+                                    {task.completed ? '✅' : '⏳'}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Priority Statistics */}
             <div className="deadline-stats">
                 <h3>🏷️ Priority Distribution</h3>
@@ -240,8 +414,24 @@ const StatsView: React.FC<StatsViewProps> = ({ tasks }) => {
                         {completionRate >= 80 ? '(Excellent!)' :
                             completionRate >= 60 ? '(Good!)' :
                                 completionRate >= 40 ? '(Fair)' : '(Needs improvement)'}
-          </span>
+                    </span>
                 </div>
+                {timeStats.totalActualTime > 0 && (
+                    <div className="activity-item">
+                        <span className="activity-icon">🍅</span>
+                        <span>Total focus time: <strong>{Math.round(timeStats.totalActualTime / 60 * 10) / 10} hours</strong></span>
+                    </div>
+                )}
+                {timeStats.timeAccuracy > 0 && (
+                    <div className="activity-item">
+                        <span className="activity-icon">⏱️</span>
+                        <span>Time estimation accuracy: <strong>{timeStats.timeAccuracy}%</strong>
+                            {timeStats.timeAccuracy >= 90 ? ' (Excellent!)' :
+                                timeStats.timeAccuracy >= 70 ? ' (Good!)' :
+                                    timeStats.timeAccuracy >= 50 ? ' (Fair)' : ' (Needs improvement)'}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Motivational Message */}

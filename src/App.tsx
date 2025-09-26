@@ -8,7 +8,8 @@ import StatsView from './components/StatsView'
 import AIAssistant from './components/AIAssistant'
 import DebugPanel from './components/DebugPanel'
 import EditTaskModal from './components/EditTaskModal'
-import DataManager from './components/DataManager' // New import
+import DataManager from './components/DataManager' 
+import PomodoroTimer from './components/PomodoroTimer'
 
 interface Task {
     id: number;
@@ -21,7 +22,7 @@ interface Task {
     actualTime?: number; // in minutes
 }
 
-type ViewType = 'list' | 'calendar' | 'stats' | 'ai' | 'data' | 'debug' // Added 'data' view
+type ViewType = 'list' | 'calendar' | 'stats' | 'ai' | 'pomodoro' | 'data' | 'debug'
 
 function App() {
     const [tasks, setTasks] = useState<Task[]>([])
@@ -250,6 +251,13 @@ function App() {
                         onAddTask={addTask}
                     />
                 )
+            case 'pomodoro':
+                return (
+                    <PomodoroTimer
+                        tasks={tasks} 
+                        onUpdateTask={updateTask}
+                    />
+                )
             default:
                 return null
         }
@@ -287,6 +295,19 @@ function App() {
                     onClick={() => setCurrentView('ai')}
                 >
                     🤖 AI Assistant
+                </button>
+                <button
+                    className={`view-btn ${currentView === 'pomodoro' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('pomodoro')}
+                >
+                    🍅 Pomodoro
+                </button>
+                
+                <button
+                    className={`view-btn ${currentView === 'data' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('data')}
+                >
+                    📦 Data Manager
                 </button>
                 <button
                     className={`view-btn ${currentView === 'data' ? 'active' : ''}`}
