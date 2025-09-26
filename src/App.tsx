@@ -167,7 +167,7 @@ function App() {
         setIsEditModalOpen(false)
     }
 
-    // NEW: Import tasks (replace or merge)
+    // Import tasks (replace or merge)
     const importTasks = (importedTasks: Task[], mode: 'replace' | 'merge' = 'merge') => {
         // Ensure all imported tasks have unique IDs
         const tasksWithUniqueIds = importedTasks.map(task => ({
@@ -183,7 +183,7 @@ function App() {
         }
     }
 
-    // NEW: Clear all tasks
+    // Clear all tasks
     const clearAllTasks = () => {
         if (window.confirm('Are you sure you want to delete all tasks? This cannot be undone.')) {
             setTasks([])
@@ -236,6 +236,13 @@ function App() {
                         onUpdateTask={updateTask}
                     />
                 )
+            case 'pomodoro':
+                return (
+                    <PomodoroTimer
+                        tasks={tasks} 
+                        onUpdateTask={updateTask}
+                    />
+                )
             case 'data':
                 return (
                     <DataManager
@@ -251,13 +258,6 @@ function App() {
                         onAddTask={addTask}
                     />
                 )
-            case 'pomodoro':
-                return (
-                    <PomodoroTimer
-                        tasks={tasks} 
-                        onUpdateTask={updateTask}
-                    />
-                )
             default:
                 return null
         }
@@ -270,7 +270,7 @@ function App() {
                 <p>Manage your studies, assignments, and daily tasks</p>
             </div>
 
-            {/* View Navigation */}
+            {/* View Navigation - 修復重複按鈕 */}
             <div className="view-navigation">
                 <button
                     className={`view-btn ${currentView === 'list' ? 'active' : ''}`}
@@ -301,13 +301,6 @@ function App() {
                     onClick={() => setCurrentView('pomodoro')}
                 >
                     🍅 Pomodoro
-                </button>
-                
-                <button
-                    className={`view-btn ${currentView === 'data' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('data')}
-                >
-                    📦 Data Manager
                 </button>
                 <button
                     className={`view-btn ${currentView === 'data' ? 'active' : ''}`}
